@@ -1,9 +1,14 @@
 import os
+import warnings 
+warnings.filterwarnings('ignore')
 
 # Production configuration
 PORT = int(os.environ.get('PORT', 5001))
 DEBUG = os.environ.get('FLASK_ENV') != 'production'
+IS_PRODUCTION = os.environ.get('FLASK_ENV') == 'production'
 
+if IS_PRODUCTION:
+    os.environ['DISABLE_DEEP_LEARNING'] = '1'
 """
 CreativeIQ Backend Server - INTEGRATED VERSION with Dynamic IP
 Complete AI-powered creative analysis system
