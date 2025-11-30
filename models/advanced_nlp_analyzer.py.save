@@ -1,0 +1,220 @@
+"""
+Advanced NLP Analyzer using BERT and GPT
+Provides sophisticated text analysis including sentiment, intent,
+persuasiveness, and style analysis
+"""
+
+from transformers import (
+    pipeline, 
+    AutoTokenizer, 
+    AutoModelForSequenceClassification,
+    BertTokenizer,
+    BertForSequenceClassification
+)
+import torch
+import re
+from collections import Counter
+
+class AdvancedNLPAnalyzer:
+    """Advanced NLP analysis using transformer models"""
+    
+    def __init__(self):
+        print("🔄 Loading NLP models (this may take a minute)...")
+        
+        try:
+            # Sentiment analysis with BERT
+            self.sentiment_analyzer = pipeline(
+                "sentiment-analysis",
+                model="distilbert-base-uncased-finetuned-sst-2-english"
+            )
+            
+            # Emotion detection
+            self.emotion_analyzer = pipeline(
+                "text-classification",
+                model="j-hartmann/emotion-english-distilroberta-base",
+                top_k=None
+            )
+            
+            # Zero-shot classification for intent
+            self.intent_classifier = pipeline(
+                "zero-shot-classification",
+                model="facebook/bart-large-mnli"
+            )
+            
+            print("✅ NLP models loaded successfully!")
+            self.models_loaded = True
+            
+        except Exception as e:
+            print(f"⚠️  Could not load some NLP models: {str(e)}")
+            print("   Falling back to rule-based analysis")
+            self.models_loaded = False
+    
+    def analyze(self, text):
+        """
+        Comprehensive NLP analysis
+        
+        Args:
+            text: Input text to analyze
+            
+        Returns:
+            Dictionary with advanced NLP insights
+        """
+        if not text or len(text.strip()) == 0:
+            return self.get_default_analysis()
+        
+        try:
+            # Run all analyses
+            sentiment = self.analyze_sentiment(text)
+            emotions = self.analyze_emotions(text)
+            intent = self.classify_intent(text)
+            persuasiveness = self.analyze_persuasiveness(text)
+            urgency = self.detect_urgency(text)
+            readability = self.advanced_readability(text)
+            tone = self.analyze_tone(text)
+            hooks = self.detect_hooks(text)
+            power_words = self.detect_power_words(text)
+            
+            return {
+                'sentiment': sentiment,
+                'emotions': emotions,
+                'intent': intent,
+                'persuasiveness': persuasiveness,
+                'urgency': urgency,
+                'readability': readability,
+                'tone': tone,
+                'attention_hooks': hooks,
+                'power_words': power_words,
+                'nlp_score': self.calculate_nlp_score(
+                    sentiment, emotions, persuasiveness, hooks
+                )
+            }
+            
+        except Exception as e:
+            print(f"❌ NLP analysis error: {str(e)}")
+            return self.get_default_analysis()
+    
+    def analyze_sentiment(self, text):
+        """Deep sentiment analysis with BERT"""
+        try:
+            if self.models_loaded:
+                # Use BERT for sentiment
+                result = self.sentiment_analyzer(text[:512])[0]  # BERT max length
+                
+                label = result['label'].lower()
+                score = result['score']
+                
+                # Convert to detailed sentiment
+                if label == 'positive':
+                    sentiment_label = 'very_positive' if score > 0.9 else 'positive'
+                else:
+                    sentiment_label = 'very_negative' if score > 0.9 else 'negative'
+                
+                # Calculate polarity (-1 to 1)
+                polarity = score if label == 'positive' else -score
+                
+                return {
+                    'label': sentiment_label,
+                    'polarity': round(polarity, 3),
+                    'confidence': round(score, 3),
+                    'model': 'BERT',
+                    'engagement_impact': 'high' if abs(polarity) > 0.7 else 'medium'
+                }
+            else:
+                # Fallback to simple analysis
+                return self.simple_sentiment(text)
+                
+        except Exception as e:
+            print(f"Sentiment analysis error: {str(e)}")
+            return self.simple_sentiment(text)
+    
+    def simple_sentiment(self, text):
+        """Simple rule-based sentiment as fallback"""
+        positive_words = ['great', 'amazing', 'love', 'best', 'awesome', 
+                         'fantastic', 'wonderful', 'excellent', 'perfect']
+        negative_words = ['bad', 'worst', 'hate', 'terrible', 'awful', 
+                         'horrible', 'poor', 'disappointing']
+        
+        text_lower = text.lower()
+        pos_count = sum(1 for word in positive_words if word in text_lower)
+        neg_count = sum(1 for word in negative_words if word in text_lower)
+        
+        if pos_count > neg_count:
+            polarity = 0.6
+            label = 'positive'
+        elif neg_count > pos_count:
+            polarity = -0.6
+            label = 'negative'
+        else:
+            polarity = 0.0
+            label = 'neutral'
+        
+        return {
+            'label': label,
+            'polarity': polarity,
+            'confidence': 0.7,
+            'model': 'rule-based',
+            'engagement_impact': 'medium'
+        }
+    
+    def analyze_emotions(self, text):
+        """Detect multiple emotions in text"""
+        try:
+            if self.models_loaded:
+                # Use emotion detection model
+                emotions = self.emotion_analyzer(text[:512])[0]
+                
+                # Sort by score
+                emotions = sorted(emotions, key=lambda x: x['score'], reverse=True)
+                
+                dominant_emotion = emotions[0]
+                
+                return {
+                    'dominant_emotion': dominant_emotion['label'],
+                    'confidence': round(dominant_emotion['score'], 3),
+                    'all_emotions': [
+                        {
+                            'emotion': e['label'],
+                            'score': round(e['score'], 3)
+                        } for e in emotions[:5]  # Top 5
+                    ],
+                    'emotional_diversity': len([e for e in emotions if e['score'] > 0.1]),
+                    'model': 'RoBERTa'
+                }
+            else:
+                return self.simple_emotions(text)
+                
+        except Exception as e:
+            print(f"Emotion analysis error: {str(e)}")
+            return self.simple_emotions(text)
+    
+    def simple_emotions(self, text):
+        """Simple emotion detection as fallback"""
+        emotion_keywords = {
+            'joy': ['happy', 'excited', 'love', 'amazing', 'wonderful'],
+            'trust': ['trust', 'reliable', 'honest', 'quality', 'guaranteed'],
+            'fear': ['limited', 'hurry', 'don\'t miss', 'last chance', 'urgent'],
+            'surprise': ['wow', 'incredible', 'unbelievable', 'shocking'],
+            'sadness': ['missing out', 'lose', 'without'],
+            'anger': ['never', 'stop', 'enough'],
+            'anticipation': ['coming', 'soon', 'new', 'exclusive', 'first']
+        }
+        
+        text_lower = text.lower()
+        emotion_scores = {}
+        
+        for emotion, keywords in emotion_keywords.items():
+            score = sum(1 for keyword in keywords if keyword in text_lower)
+            if score > 0:
+                emotion_scores[emotion] = score / len(keywords)
+        
+        if emotion_scores:
+            dominant = max(emotion_scores.items(), key=lambda x: x[1])
+            return {
+                'dominant_emotion': dominant[0],
+                'confidence': min(0.9, dominant[1]),
+                'all_emotions': [
+                    {'emotion': e, 'score': s} 
+                    for e, s in sorted(emotion_scores.items(), 
+                                     key=lambda x: x[1], reverse=True)
+                ],
+                'emotional_diversity': len(emo

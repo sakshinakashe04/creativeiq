@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CreativeIQ - AI Creative Analyzer</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState } = React;
+        function CreativeIQ() {
+            const [image, setImage] = useState(null);
+            const [imagePreview, setImagePreview] = useState(null);
+            const [caption, setCaption] = useState('');
+            const [results, setResults] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const handleImageUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    setImage(file);
+                    const reader = new FileReader();
+                    reader.onloadend = () => { setImagePreview(reader.result); };
+                    reader.readAsDataURL(file);
+                }
+            };
+            const analyzeCreative = async () => {
+                if (!image && !caption.trim()) {
+                    setError('Please provide either an image or caption to analyze');
+                    return;
+                }
+                setLoading(true);
+                setError(null);
+                try {
+                    const formData = new FormData();
+                    if (image) formData.append('image', image);
+                    if (caption) formData.append('caption', caption);
+                    // Auto detect server URL
+                    const hostname = window.location.hostname || 'localhost';
+                    const apiUrl = `http://${hostname}:5001/api/analyze`;
+
+
+                    const response = await fetch(`${serverInfo.base_url}/api/analyze`, {
+                        method: 'POST',
+                        body: formData,
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Backend server not responding. Make sure it is running on 192.168.1.116:5001');
+                    }
+                    const data = await response.json();
+                    setResults(data.data);
+                } catch (err) {
+                    setError(err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+            const reset = () => {
+                setImage(null);
+                setImagePreview(null);
+                setCaption('');
+                setResults(null);
+                setError(null);
+            };
+            const getScoreColor = (score) => {
+                if (score >= 80) return '#16a34a';
+                if (score >= 60) return '#ca8a04';
+                return '#dc2626';
+            };
+            return (
+                <div style={{minHeight: '100vh', background: 'linear-gradient(135deg, #e0f2fe 0%, #ffffff 50%, #fae8ff 100%)'}}>
+                    <header style={{background: 'white', borderBottom: '1px solid #e5e7eb', padding: '1.5rem'}}>
+                        <div style={{maxWidth: '1280px', margin: '0 auto'}}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap'}}>
+                                <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                                    <div style={{background: 'linear-gradient(135deg, #2563eb, #9333ea)', padding: '0.5rem', borderRadius: '0.5rem', fontSize: '1.5rem'}}>⚡</div>
+                                    <div>
+                                        <h1 style={{fontSize: '2rem', fontWeight: 'bold', margin: 0}}>CreativeIQ</h1>
+                                        <p style={{fontSize: '0.875rem', color: '#6b7280', margin: 0}}>AI-Powered Creative Performance Analyzer</p>
+                                    </div>
+                                </div>
+                                <div style={{textAlign: 'right'}}>
+                                    <p style={{fontSize: '0.875rem', color: '#6b7280', margin: 0}}>Predict engagement before posting</p>
+                                    <p style={{fontSize: '0.75rem', color: '#9ca3af', margin: 0}}>Server: 192.168.1.116:5001</p>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+                    <main style={{maxWidth: '1280px', margin: '0 auto', padding: '2rem'}}>
+                        {!results ? (
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem'}}>
+                                <div style={{background: 'white', borderRadius: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '1.5rem', border: '2px solid #e5e7eb'}}>
+                                    <h2 style={{fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem'}}>🖼️ Upload Creative</h2>
+                                    <div onClick={() => document.getElementById('imageInput').click()} style={{border: '2px dashed #d1d5db', borderRadius: '0.5rem', padding: '2rem', textAlign: 'center', cursor: 'pointer'}}>
+                                        {imagePreview ? (
+                                            <img src={imagePreview} alt="Preview" style={{maxHeight: '16rem', margin: '0 auto', borderRadius: '0.5rem'}} />
+                                        ) : (
+                                            <div>
+                                                <div style={{fontSize: '3rem', marginBottom: '1rem'}}>📤</div>
+                                                <p style={{color: '#4b5563', fontWeight: '500', marginBottom: '0.5rem'}}>Click to upload image</p>
+                                                <p style={{fontSize: '0.875rem', color: '#9ca3af'}}>PNG, JPG up to 10MB</p>
+                                            </div>
+                                        )}
+                                        <input id="imageInput" type="file" accept="image/*" onChange={handleImageUpload} style={{display: 'none'}} />
+                                    </div>
+                                    {image && <p style={{fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem', textAlign: 'center'}}>✓ {image.name}</p>}
+                                </div>
+                                <div style={{background: 'white', borderRadius: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', padding: '1.5rem', border: '2px solid #e5e7eb'}}>
+                                    <h2 style={{fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem'}}>📝 Add Caption</h2>
+                                    <textarea value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Enter your ad copy, social media caption, or marketing text here..." style={{width: '100%', height: '16rem', padding: '1rem', border: '2px solid #d1d5db', borderRadius: '0.5rem', resize: 'none', fontFamily: 'inherit', fontSize: '0.875rem'}} />
+                                    <p style={{fontSize: '0.875rem', color: '#6b7280', marginTop: '1rem'}}>
+                                        {caption.length} characters | {caption.split(/\s+/).filter(Boolean).length} words
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                                <div style={{background: 'linear-gradient(135deg, #2563eb, #9333ea)', borderRadius: '1rem', padding: '2rem', color: 'white', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'}}>
+                                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem'}}>
+                                        <div style={{textAlign: 'center'}}>
+                                            <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>🎯</div>
+                                            <p style={{fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.25rem'}}>Overall Score</p>
+                                            <p style={{fontSize: '3rem', fontWeight: 'bold', margin: 0}}>{results.prediction.overall_score}</p>
+                                            <p style={{fontSize: '0.875rem', opacity: 0.75}}>out of 100</p>
+                                        </div>
+                                        <div style={{textAlign: 'center'}}>
+                                            <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>📈</div>
+                                            <p style={{fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.25rem'}}>Predicted Engagement</p>
+                                            <p style={{fontSize: '3rem', fontWeight: 'bold', margin: 0}}>{results.prediction.predictions.engagement}%</p>
+                                            <p style={{fontSize: '0.875rem', opacity: 0.75}}>engagement rate</p>
+                                        </div>
+                                        <div style={{textAlign: 'center'}}>
+                                            <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>📊</div>
+                                            <p style={{fontSize: '0.875rem', opacity: 0.9, marginBottom: '0.25rem'}}>Projected Score</p>
+                                            <p style={{fontSize: '3rem', fontWeight: 'bold', margin: 0}}>{results.prediction.projected_score}</p>
+                                            <p style={{fontSize: '0.875rem', opacity: 0.75}}>with improvements</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem'}}>
+                                    <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}}>
+                                        <h3 style={{fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem'}}>🖼️ Image Analysis</h3>
+                                        <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: '#f9fafb', borderRadius: '0.5rem'}}>
+                                                <span>Image Score</span>
+                                                <span style={{fontWeight: 'bold', fontSize: '1.125rem', color: getScoreColor(results.image_analysis.image_score)}}>{results.image_analysis.image_score}/100</span>
+                                            </div>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: '#f9fafb', borderRadius: '0.5rem'}}>
+                                                <span>Brightness</span>
+                                                <span style={{fontWeight: '600'}}>{results.image_analysis.brightness.status.replace('_', ' ')}</span>
+                                            </div>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: '#f9fafb', borderRadius: '0.5rem'}}>
+                                                <span>Contrast</span>
+                                                <span style={{fontWeight: '600'}}>{results.image_analysis.contrast.status}</span>
+                                            </div>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: '#f9fafb', borderRadius: '0.5rem'}}>
+                                                <span>Composition</span>
+                                                <span style={{fontWeight: '600'}}>{results.image_analysis.composition_score.balance}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}}>
+                                        <h3 style={{fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem'}}>📝 Text Analysis</h3>
+                                        <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: '#f9fafb', borderRadius: '0.5rem'}}>
+                                                <span>Text Score</span>
+                                                <span style={{fontWeight: 'bold', fontSize: '1.125rem', color: getScoreColor(results.text_analysis.text_score)}}>{results.text_analysis.text_score}/100</span>
+                                            </div>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: '#f9fafb', borderRadius: '0.5rem'}}>
+                                                <span>Sentiment</span>
+                                                <span style={{fontWeight: '600', textTransform: 'capitalize'}}>{results.text_analysis.sentiment.emotion}</span>
+                                            </div>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: '#f9fafb', borderRadius: '0.5rem'}}>
+                                                <span>Readability</span>
+                                                <span style={{fontWeight: '600'}}>{results.text_analysis.readability.grade_level}</span>
+                                            </div>
+                                            <div style={{display: 'flex', justifyContent: 'space-between', padding: '0.75rem', background: '#f9fafb', borderRadius: '0.5rem'}}>
+                                                <span>Call-to-Action</span>
+                                                <span style={{fontWeight: '600'}}>{results.text_analysis.has_cta.present ? '✓ Present' : '✗ Missing'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {results.prediction.improvements.length > 0 && (
+                                    <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}}>
+                                        <h3 style={{fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem'}}>⚠️ Recommended Improvements</h3>
+                                        <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+                                            {results.prediction.improvements.map((improvement, idx) => (
+                                                <div key={idx} style={{padding: '1rem', borderRadius: '0.5rem', borderLeft: '4px solid', borderLeftColor: improvement.priority === 'HIGH' ? '#ef4444' : improvement.priority === 'MEDIUM' ? '#f59e0b' : '#3b82f6', background: improvement.priority === 'HIGH' ? '#fef2f2' : improvement.priority === 'MEDIUM' ? '#fffbeb' : '#eff6ff'}}>
+                                                    <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem'}}>
+                                                        <span style={{fontWeight: '600'}}>{improvement.aspect}</span>
+                                                        <span style={{padding: '0.25rem 0.5rem', borderRadius: '0.25rem', fontSize: '0.75rem', fontWeight: 'bold', background: improvement.priority === 'HIGH' ? '#fecaca' : improvement.priority === 'MEDIUM' ? '#fde68a' : '#bfdbfe', color: improvement.priority === 'HIGH' ? '#991b1b' : improvement.priority === 'MEDIUM' ? '#78350f' : '#1e40af'}}>{improvement.priority}</span>
+                                                    </div>
+                                                    <p style={{fontSize: '0.875rem', marginBottom: '0.5rem'}}><strong>Issue:</strong> {improvement.current_problem}</p>
+                                                    <p style={{fontSize: '0.875rem', marginBottom: '0.5rem'}}><strong>Fix:</strong> {improvement.recommended_fix}</p>
+                                                    <p style={{fontSize: '0.875rem', fontWeight: '600', color: '#16a34a'}}>Expected boost: {improvement.expected_boost}</p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                <div style={{background: 'white', borderRadius: '1rem', padding: '1.5rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'}}>
+                                    <h3 style={{fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem'}}>📈 Performance Predictions</h3>
+                                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem'}}>
+                                        <div style={{textAlign: 'center', padding: '1rem', background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)', borderRadius: '0.5rem'}}>
+                                            <p style={{fontSize: '0.875rem', marginBottom: '0.25rem'}}>Engagement Rate</p>
+                                            <p style={{fontSize: '2rem', fontWeight: 'bold', color: '#16a34a', margin: 0}}>{results.prediction.predictions.engagement}%</p>
+                                        </div>
+                                        <div style={{textAlign: 'center', padding: '1rem', background: 'linear-gradient(135deg, #dbeafe, #bfdbfe)', borderRadius: '0.5rem'}}>
+                                            <p style={{fontSize: '0.875rem', marginBottom: '0.25rem'}}>Click-Through Rate</p>
+                                            <p style={{fontSize: '2rem', fontWeight: 'bold', color: '#2563eb', margin: 0}}>{results.prediction.predictions.clicks}%</p>
+                                        </div>
+                                        <div style={{textAlign: 'center', padding: '1rem', background: 'linear-gradient(135deg, #fae8ff, #f3e8ff)', borderRadius: '0.5rem'}}>
+                                            <p style={{fontSize: '0.875rem', marginBottom: '0.25rem'}}>Expected Shares</p>
+                                            <p style={{fontSize: '2rem', fontWeight: 'bold', color: '#9333ea', margin: 0}}>{results.prediction.predictions.shares}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {error && (
+                            <div style={{background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.5rem', padding: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '1.5rem'}}>
+                                <span style={{fontSize: '1.25rem'}}>⚠️</span>
+                                <p style={{color: '#991b1b', margin: 0}}>{error}</p>
+                            </div>
+                        )}
+                        <div style={{display: 'flex', justifyContent: 'center', gap: '1rem', marginTop: '2rem'}}>
+                            {!results ? (
+                                <button onClick={analyzeCreative} disabled={loading || (!image && !caption.trim())} style={{padding: '1rem 2rem', background: 'linear-gradient(90deg, #2563eb, #9333ea)', color: 'white', borderRadius: '0.5rem', fontWeight: '600', border: 'none', cursor: loading || (!image && !caption.trim()) ? 'not-allowed' : 'pointer', opacity: loading || (!image && !caption.trim()) ? 0.5 : 1, fontSize: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}}>
+                                    {loading ? 'Analyzing...' : 'Analyze Creative'}
+                                </button>
+                            ) : (
+                                <button onClick={reset} style={{padding: '1rem 2rem', background: 'linear-gradient(90deg, #4b5563, #374151)', color: 'white', borderRadius: '0.5rem', fontWeight: '600', border: 'none', cursor: 'pointer', fontSize: '1rem', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}}>
+                                    Analyze Another
+                                </button>
+                            )}
+                        </div>
+                    </main>
+                    <footer style={{background: 'white', borderTop: '1px solid #e5e7eb', marginTop: '3rem', padding: '1.5rem', textAlign: 'center', color: '#6b7280', fontSize: '0.875rem'}}>
+                        <p>CreativeIQ v1.0 - Powered by AI • Predict engagement before posting</p>
+                        <p style={{fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.25rem'}}>Connected to: http://192.168.1.116:5001</p>
+                    </footer>
+                </div>
+            );
+        }
+        ReactDOM.render(<CreativeIQ />, document.getElementById('root'));
+    </script>
+</body>
+</html>
