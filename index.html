@@ -41,9 +41,11 @@
                     if (image) formData.append('image', image);
                     if (caption) formData.append('caption', caption);
                     // Auto detect server URL
-                    const apiUrl = 'https://creativeiq.onrender.com/api/analyze';
+                    const hostname = window.location.hostname || 'localhost';
+                    const apiUrl = `http://${hostname}:5001/api/analyze`;
 
-                    const response = await fetch(apiUrl, {
+
+                    const response = await fetch(`${serverInfo.base_url}/api/analyze`, {
                         method: 'POST',
                         body: formData,
                     });
